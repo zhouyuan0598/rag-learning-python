@@ -27,12 +27,13 @@ class OfflineContextLLM:
         )
 
 
-class OpenAICompatibleLLM:
+class ClaudeLLM:
     def __init__(
         self,
         model: str | None = None,
         api_key: str | None = None,
         base_url: str | None = None,
+        max_tokens: int | None = None,
     ) -> None:
         try:
             from dotenv import load_dotenv
@@ -42,34 +43,42 @@ class OpenAICompatibleLLM:
             pass
 
         try:
-            from openai import OpenAI
+            from anthropic import Anthropic
         except ImportError as exc:
             raise RuntimeError(
-                "openai is not installed. Run: uv sync --extra llm --group dev"
+                "anthropic is not installed. Run: uv sync --extra llm --group dev"
             ) from exc
 
-        self.model = model or os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
-        self.client = OpenAI(
-            api_key=api_key or os.getenv("OPENAI_API_KEY"),
-            base_url=base_url or os.getenv("OPENAI_BASE_URL"),
-        )
+        self.model = model or os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-5-20250929")
+        self.max_tokens = max_tokens or int(os.getenv("ANTHROPIC_MAX_TOKENS", "1024"))
+
+        client_kwargs = {}
+        resolved_api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
+        resolved_base_url = base_url or os.getenv("ANTHROPIC_BASE_URL")
+        if resolved_api_key:
+            client_kwargs["api_key"] = resolved_api_key
+        if resolved_base_url:
+            client_kwargs["base_url"] = resolved_base_url
+
+        self.client = Anthropic(**client_kwargs)
 
     def generate(self, question: str, contexts: list[RetrievedChunk]) -> str:
-        response = self.client.chat.completions.create(
+        message = self.client.messages.create(
             model=self.model,
+            max_tokens=self.max_tokens,
+            system=(
+                "You answer questions using only the provided retrieved context. "
+                "Cite sources with the citation labels. If context is insufficient, say so."
+            ),
             messages=[
                 {
-                    "role": "system",
-                    "content": (
-                        "You answer questions using only the provided retrieved context. "
-                        "Cite sources with the citation labels. If context is insufficient, say so."
-                    ),
-                },
-                {"role": "user", "content": build_prompt(question, contexts)},
+                    "role": "user",
+                    "content": build_prompt(question, contexts),
+                }
             ],
             temperature=0.2,
         )
-        return response.choices[0].message.content or ""
+        return _message_text(message)
 
 
 def build_prompt(question: str, contexts: list[RetrievedChunk]) -> str:
@@ -77,3 +86,11 @@ def build_prompt(question: str, contexts: list[RetrievedChunk]) -> str:
         f"[{result.chunk.citation}]\n{result.chunk.text}" for result in contexts
     )
     return f"Question:\n{question}\n\nRetrieved context:\n{context_text}"
+
+
+def _message_text(message) -> str:
+    parts = []
+    for block in message.content:
+        if getattr(block, "type", None) == "text":
+            parts.append(block.text)
+    return "".join(parts)

@@ -6,7 +6,7 @@
 
 **Architecture:** The project exposes a CLI backed by small modules for document loading, splitting, embedding, vector storage, LLM generation, and pipeline orchestration. Optional heavy dependencies are lazy-loaded so the base project can be tested quickly.
 
-**Tech Stack:** Python 3.12, uv, Typer, Rich, pytest, ruff, optional Chroma, optional sentence-transformers, optional OpenAI-compatible LLM client.
+**Tech Stack:** Python 3.12, uv, Typer, Rich, pytest, ruff, optional Chroma, optional sentence-transformers, optional Claude / Anthropic LLM client.
 
 ---
 

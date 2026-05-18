@@ -13,7 +13,7 @@ load documents, split chunks, embed text, store vectors, retrieve matches, and g
 - A deterministic hash embedding backend for zero-setup learning and tests
 - Optional `sentence-transformers` backend for real local embeddings
 - Optional `Chroma` backend for persistent local vector storage
-- Optional OpenAI-compatible client for LLM generation
+- Optional Claude / Anthropic client for LLM generation
 - `pytest` for tests and `ruff` for linting and formatting
 
 ## Project Shape
@@ -26,7 +26,7 @@ The project is CLI-first. The commands are:
 
 The implementation keeps each RAG stage in its own module so the learning path stays visible.
 The default path works offline with hash embeddings and an offline answer formatter.
-The realistic path can be enabled with optional extras for Chroma, sentence-transformers, and OpenAI-compatible APIs.
+The realistic path can be enabled with optional extras for Chroma, sentence-transformers, and Claude APIs.
 
 ## Data Flow
 

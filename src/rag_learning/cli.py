@@ -8,7 +8,7 @@ from rich.console import Console
 from rich.table import Table
 
 from rag_learning.embeddings import HashEmbeddingModel, SentenceTransformerEmbedding
-from rag_learning.llm_client import OfflineContextLLM, OpenAICompatibleLLM
+from rag_learning.llm_client import ClaudeLLM, OfflineContextLLM
 from rag_learning.rag_pipeline import RagPipeline
 from rag_learning.vector_store import ChromaVectorStore, JsonVectorStore
 
@@ -17,7 +17,7 @@ console = Console()
 
 EmbeddingBackend = Literal["hash", "sentence-transformer"]
 StoreBackend = Literal["json", "chroma"]
-LLMBackend = Literal["offline", "openai"]
+LLMBackend = Literal["offline", "claude"]
 
 
 @app.command()
@@ -98,10 +98,10 @@ def _create_embedding_model(embedding_backend: EmbeddingBackend) -> HashEmbeddin
     return SentenceTransformerEmbedding()
 
 
-def _create_llm(llm_backend: LLMBackend) -> OfflineContextLLM | OpenAICompatibleLLM:
+def _create_llm(llm_backend: LLMBackend) -> OfflineContextLLM | ClaudeLLM:
     if llm_backend == "offline":
         return OfflineContextLLM()
-    return OpenAICompatibleLLM()
+    return ClaudeLLM()
 
 
 def _print_results(results: list) -> None:
