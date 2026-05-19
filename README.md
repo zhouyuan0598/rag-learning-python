@@ -79,4 +79,31 @@ uv run rag ask "RAG 和微调有什么区别"
 uv run rag ask "RAG 和微调有什么区别" --llm-backend claude
 ```
 
+## RAG 质量评估
+
+先索引示例知识库：
+
+```bash
+uv run rag ingest data/knowledge
+```
+
+再运行评测集：
+
+```bash
+uv run rag eval data/eval/questions.jsonl --top-k 3
+```
+
+评估命令会输出整体指标和逐题明细：
+
+- `retrieval_hit_rate`：期望 citation 是否出现在 top-k 检索结果中。
+- `answer_contains_expected_rate`：离线回答是否包含参考答案文本。
+- `avg_top_score`：每题最高检索分数的平均值。
+- `avg_retrieval_ms` / `avg_answer_ms`：检索与回答生成耗时。
+
+评测集使用 JSONL，每行一个问题：
+
+```json
+{"question":"什么是 RAG？","expected_answer":"检索增强生成","expected_citations":["rag-intro.md#chunk-0"]}
+```
+
 默认命令使用 hash embedding，便于先理解流程。真实语义效果请安装 `local` extra 并使用 sentence-transformers 后端。

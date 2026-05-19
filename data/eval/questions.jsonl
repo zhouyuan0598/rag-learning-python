@@ -1,0 +1,2 @@
+{"question":"什么是 RAG？","expected_answer":"检索增强生成","expected_citations":["rag-intro.md#chunk-0"]}
+{"question":"RAG 常用于哪些场景？","expected_answer":"企业知识库问答","expected_citations":["rag-intro.md#chunk-0"]}
