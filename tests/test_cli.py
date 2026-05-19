@@ -2,7 +2,12 @@ from pathlib import Path
 
 from typer.testing import CliRunner
 
-from rag_learning.cli import _create_embedding_model, _resolve_storage_path, app
+from rag_learning.cli import (
+    _create_embedding_model,
+    _resolve_collection_name,
+    _resolve_storage_path,
+    app,
+)
 
 runner = CliRunner()
 
@@ -34,3 +39,21 @@ def test_create_sentence_transformer_embedding_uses_cli_model_name() -> None:
     embedding = _create_embedding_model("sentence-transformer", "sentence-transformers/test-model")
 
     assert embedding.model_name == "sentence-transformers/test-model"
+
+
+def test_resolve_collection_name_separates_embedding_backends() -> None:
+    assert _resolve_collection_name(None, "json", "hash", None) == "rag_learning"
+    assert _resolve_collection_name(None, "chroma", "hash", None) == "rag_learning_hash"
+    assert (
+        _resolve_collection_name(
+            None,
+            "chroma",
+            "sentence-transformer",
+            "models/bge-small-zh-v1.5",
+        )
+        == "rag_learning_sentence_transformer_models_bge_small_zh_v1_5"
+    )
+    assert (
+        _resolve_collection_name("custom_collection", "chroma", "sentence-transformer", None)
+        == "custom_collection"
+    )

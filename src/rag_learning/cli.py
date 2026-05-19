@@ -20,6 +20,7 @@ StoreBackend = Literal["json", "chroma"]
 LLMBackend = Literal["offline", "claude"]
 DEFAULT_JSON_STORAGE_PATH = Path("data/storage/hash-store.json")
 DEFAULT_CHROMA_STORAGE_PATH = Path("data/storage/chroma")
+DEFAULT_COLLECTION_NAME = "rag_learning"
 
 
 @app.command()
@@ -29,7 +30,7 @@ def ingest(
     embedding_backend: Annotated[EmbeddingBackend, typer.Option("--embedding-backend")] = "hash",
     embedding_model: Annotated[str | None, typer.Option("--embedding-model")] = None,
     storage_path: Annotated[Path | None, typer.Option("--storage-path")] = None,
-    collection: Annotated[str, typer.Option("--collection")] = "rag_learning",
+    collection: Annotated[str | None, typer.Option("--collection")] = None,
     chunk_size: Annotated[int, typer.Option("--chunk-size")] = 800,
     overlap: Annotated[int, typer.Option("--overlap")] = 100,
 ) -> None:
@@ -53,7 +54,7 @@ def search(
     embedding_backend: Annotated[EmbeddingBackend, typer.Option("--embedding-backend")] = "hash",
     embedding_model: Annotated[str | None, typer.Option("--embedding-model")] = None,
     storage_path: Annotated[Path | None, typer.Option("--storage-path")] = None,
-    collection: Annotated[str, typer.Option("--collection")] = "rag_learning",
+    collection: Annotated[str | None, typer.Option("--collection")] = None,
 ) -> None:
     pipeline = RagPipeline(
         store=_create_store(
@@ -74,7 +75,7 @@ def ask(
     embedding_backend: Annotated[EmbeddingBackend, typer.Option("--embedding-backend")] = "hash",
     embedding_model: Annotated[str | None, typer.Option("--embedding-model")] = None,
     storage_path: Annotated[Path | None, typer.Option("--storage-path")] = None,
-    collection: Annotated[str, typer.Option("--collection")] = "rag_learning",
+    collection: Annotated[str | None, typer.Option("--collection")] = None,
 ) -> None:
     pipeline = RagPipeline(
         store=_create_store(
@@ -88,15 +89,18 @@ def ask(
 def _create_store(
     store_backend: StoreBackend,
     storage_path: Path | None,
-    collection: str,
+    collection: str | None,
     embedding_backend: EmbeddingBackend,
     embedding_model_name: str | None,
 ) -> JsonVectorStore | ChromaVectorStore:
     embedding_model = _create_embedding_model(embedding_backend, embedding_model_name)
     resolved_storage_path = _resolve_storage_path(store_backend, storage_path)
+    resolved_collection = _resolve_collection_name(
+        collection, store_backend, embedding_backend, embedding_model_name
+    )
     if store_backend == "json":
         return JsonVectorStore(resolved_storage_path, embedding_model)
-    return ChromaVectorStore(resolved_storage_path, collection, embedding_model)
+    return ChromaVectorStore(resolved_storage_path, resolved_collection, embedding_model)
 
 
 def _resolve_storage_path(store_backend: StoreBackend, storage_path: Path | None) -> Path:
@@ -105,6 +109,28 @@ def _resolve_storage_path(store_backend: StoreBackend, storage_path: Path | None
     if store_backend == "json":
         return DEFAULT_JSON_STORAGE_PATH
     return DEFAULT_CHROMA_STORAGE_PATH
+
+
+def _resolve_collection_name(
+    collection: str | None,
+    store_backend: StoreBackend,
+    embedding_backend: EmbeddingBackend,
+    embedding_model_name: str | None,
+) -> str:
+    if collection:
+        return collection
+    if store_backend == "json":
+        return DEFAULT_COLLECTION_NAME
+
+    if embedding_backend == "hash":
+        return f"{DEFAULT_COLLECTION_NAME}_hash"
+
+    model_slug = _slugify_collection_part(embedding_model_name or "default_model")
+    return f"{DEFAULT_COLLECTION_NAME}_sentence_transformer_{model_slug}"
+
+
+def _slugify_collection_part(value: str) -> str:
+    return "".join(character if character.isalnum() else "_" for character in value).strip("_")
 
 
 def _create_embedding_model(
