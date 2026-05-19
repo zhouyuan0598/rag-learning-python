@@ -2,7 +2,7 @@ from pathlib import Path
 
 from typer.testing import CliRunner
 
-from rag_learning.cli import _resolve_storage_path, app
+from rag_learning.cli import _create_embedding_model, _resolve_storage_path, app
 
 runner = CliRunner()
 
@@ -28,3 +28,9 @@ def test_ask_command_preserves_source_citation_markup(tmp_path: Path, monkeypatc
 def test_resolve_storage_path_uses_directory_default_for_chroma() -> None:
     assert _resolve_storage_path("json", None) == Path("data/storage/hash-store.json")
     assert _resolve_storage_path("chroma", None) == Path("data/storage/chroma")
+
+
+def test_create_sentence_transformer_embedding_uses_cli_model_name() -> None:
+    embedding = _create_embedding_model("sentence-transformer", "sentence-transformers/test-model")
+
+    assert embedding.model_name == "sentence-transformers/test-model"

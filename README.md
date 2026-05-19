@@ -30,6 +30,30 @@ uv run rag --help
 uv sync --group dev --extra local
 ```
 
+第一次使用 `--embedding-backend sentence-transformer` 会下载 embedding 模型。默认模型是：
+
+```text
+BAAI/bge-small-zh-v1.5
+```
+
+如果下载进度长时间卡在 `model.safetensors: 0%`，先停止当前命令，然后重新执行：
+
+```bash
+HF_HUB_DISABLE_XET=1 uv run rag ingest data/knowledge \
+  --embedding-backend sentence-transformer \
+  --embedding-model BAAI/bge-small-zh-v1.5 \
+  --store-backend chroma
+```
+
+也可以在 `.env` 里设置默认 embedding 模型：
+
+```env
+RAG_EMBEDDING_MODEL=BAAI/bge-small-zh-v1.5
+HF_HUB_DISABLE_XET=1
+```
+
+模型文件约 95.8MB。如果网络速度只有几十 KB/s，首次下载可能需要二十分钟以上；下载完成后会被缓存，后续运行会快很多。
+
 ## 使用 Claude LLM
 
 ```bash

@@ -1721,6 +1721,7 @@ name = "rag-learning-python"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "python-dotenv" },
     { name = "rich" },
     { name = "typer" },
 ]
@@ -1728,7 +1729,6 @@ dependencies = [
 [package.optional-dependencies]
 llm = [
     { name = "anthropic" },
-    { name = "python-dotenv" },
 ]
 local = [
     { name = "chromadb" },
@@ -1749,7 +1749,7 @@ requires-dist = [
     { name = "anthropic", marker = "extra == 'llm'", specifier = ">=0.75.0" },
     { name = "chromadb", marker = "extra == 'local'", specifier = ">=1.1.0" },
     { name = "pypdf", marker = "extra == 'pdf'", specifier = ">=6.0.0" },
-    { name = "python-dotenv", marker = "extra == 'llm'", specifier = ">=1.0.0" },
+    { name = "python-dotenv", specifier = ">=1.0.0" },
     { name = "rich", specifier = ">=14.0.0" },
     { name = "sentence-transformers", marker = "extra == 'local'", specifier = ">=5.0.0" },
     { name = "typer", specifier = ">=0.20.0" },

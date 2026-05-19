@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import math
+import os
 import re
 from collections.abc import Sequence
 from typing import Protocol
@@ -39,9 +40,15 @@ class HashEmbeddingModel:
         return _normalize(vector)
 
 
+DEFAULT_SENTENCE_TRANSFORMER_MODEL = "BAAI/bge-small-zh-v1.5"
+
+
 class SentenceTransformerEmbedding:
-    def __init__(self, model_name: str = "BAAI/bge-small-zh-v1.5") -> None:
-        self.model_name = model_name
+    def __init__(self, model_name: str | None = None) -> None:
+        _load_dotenv_if_available()
+        self.model_name = (
+            model_name or os.getenv("RAG_EMBEDDING_MODEL") or DEFAULT_SENTENCE_TRANSFORMER_MODEL
+        )
         self._model = None
 
     def embed_documents(self, texts: Sequence[str]) -> list[list[float]]:
@@ -78,3 +85,12 @@ def _normalize(vector: list[float]) -> list[float]:
     if norm == 0:
         return vector
     return [value / norm for value in vector]
+
+
+def _load_dotenv_if_available() -> None:
+    try:
+        from dotenv import load_dotenv
+    except ImportError:
+        return
+    load_dotenv()
+    os.environ.setdefault("HF_HUB_DISABLE_XET", "1")

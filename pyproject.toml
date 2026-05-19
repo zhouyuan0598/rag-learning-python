@@ -5,6 +5,7 @@ description = "A small Python RAG learning project with ingestion, retrieval, an
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "python-dotenv>=1.0.0",
     "rich>=14.0.0",
     "typer>=0.20.0",
 ]
@@ -16,7 +17,6 @@ local = [
 ]
 llm = [
     "anthropic>=0.75.0",
-    "python-dotenv>=1.0.0",
 ]
 pdf = [
     "pypdf>=6.0.0",
