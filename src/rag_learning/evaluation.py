@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 import json
+from dataclasses import dataclass
 from pathlib import Path
 from time import perf_counter
 
@@ -101,7 +101,9 @@ def evaluate_cases(
         retrieved_citations = [result.chunk.citation for result in retrieved]
         retrieval_hit = None
         if case.expected_citations:
-            retrieval_hit = any(citation in retrieved_citations for citation in case.expected_citations)
+            retrieval_hit = any(
+                citation in retrieved_citations for citation in case.expected_citations
+            )
 
         top_result = retrieved[0] if retrieved else None
         results.append(
