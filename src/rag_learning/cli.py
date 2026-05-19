@@ -8,6 +8,7 @@ from rich.console import Console
 from rich.table import Table
 
 from rag_learning.embeddings import EmbeddingModel, HashEmbeddingModel, SentenceTransformerEmbedding
+from rag_learning.evaluation import EvaluationReport, evaluate_cases, load_evaluation_cases
 from rag_learning.llm_client import SYSTEM_PROMPT, ClaudeLLM, OfflineContextLLM, build_prompt
 from rag_learning.rag_pipeline import RagPipeline
 from rag_learning.vector_store import ChromaVectorStore, JsonVectorStore
@@ -95,6 +96,32 @@ def ask(
     console.print(pipeline.answer(question, top_k=top_k), markup=False)
 
 
+@app.command("eval")
+def eval_command(
+    path: Annotated[Path, typer.Argument(help="JSONL evaluation file")],
+    top_k: Annotated[int, typer.Option("--top-k")] = 5,
+    llm_backend: Annotated[LLMBackend, typer.Option("--llm-backend")] = "offline",
+    store_backend: Annotated[StoreBackend, typer.Option("--store-backend")] = "json",
+    embedding_backend: Annotated[EmbeddingBackend, typer.Option("--embedding-backend")] = "hash",
+    embedding_model: Annotated[str | None, typer.Option("--embedding-model")] = None,
+    storage_path: Annotated[Path | None, typer.Option("--storage-path")] = None,
+    collection: Annotated[str | None, typer.Option("--collection")] = None,
+) -> None:
+    try:
+        cases = load_evaluation_cases(path)
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc), param_hint="path") from exc
+
+    pipeline = RagPipeline(
+        store=_create_store(
+            store_backend, storage_path, collection, embedding_backend, embedding_model
+        ),
+        llm=_create_llm(llm_backend),
+    )
+    report = evaluate_cases(pipeline, cases, top_k=top_k)
+    _print_evaluation_report(report)
+
+
 def _create_store(
     store_backend: StoreBackend,
     storage_path: Path | None,
@@ -167,3 +194,53 @@ def _print_results(results: list) -> None:
         table.add_row(f"{result.score:.4f}", result.chunk.citation, result.chunk.text[:180])
 
     console.print(table)
+
+
+def _print_evaluation_report(report: EvaluationReport) -> None:
+    summary_table = Table(title="Evaluation Summary")
+    summary_table.add_column("Metric")
+    summary_table.add_column("Value", justify="right")
+    summary = report.summary
+    summary_table.add_row("case_count", str(summary.case_count))
+    summary_table.add_row("retrieval_hit_rate", f"{summary.retrieval_hit_rate:.2%}")
+    summary_table.add_row(
+        "answer_contains_expected_rate", f"{summary.answer_contains_expected_rate:.2%}"
+    )
+    summary_table.add_row("avg_top_score", f"{summary.avg_top_score:.4f}")
+    summary_table.add_row("avg_retrieval_ms", f"{summary.avg_retrieval_ms:.2f}")
+    summary_table.add_row("avg_answer_ms", f"{summary.avg_answer_ms:.2f}")
+    console.print(summary_table)
+
+    detail_table = Table(title="Evaluation Details")
+    detail_table.add_column("Question", overflow="fold")
+    detail_table.add_column("Retrieval")
+    detail_table.add_column("Answer")
+    detail_table.add_column("Citations", no_wrap=True, overflow="ignore")
+    detail_table.add_column("Top score", justify="right")
+    detail_table.add_column("Timing ms", justify="right")
+    for result in report.results:
+        detail_table.add_row(
+            result.case.question,
+            _format_optional_bool(result.retrieval_hit),
+            _format_bool(result.answer_contains_expected),
+            _format_citations(result.expected_citations, result.top_citation),
+            f"{result.top_score:.4f}",
+            f"retrieval {result.retrieval_ms:.2f}\nanswer {result.answer_ms:.2f}",
+        )
+    console.print(detail_table)
+
+
+def _format_citations(expected_citations: list[str], top_citation: str | None) -> str:
+    expected = ", ".join(expected_citations) or "-"
+    top = top_citation or "-"
+    return f"expected: {expected}\ntop: {top}"
+
+
+def _format_optional_bool(value: bool | None) -> str:
+    if value is None:
+        return "n/a"
+    return _format_bool(value)
+
+
+def _format_bool(value: bool) -> str:
+    return "pass" if value else "fail"

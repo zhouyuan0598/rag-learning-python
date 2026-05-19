@@ -79,3 +79,43 @@ def test_resolve_collection_name_separates_embedding_backends() -> None:
         _resolve_collection_name("custom_collection", "chroma", "sentence-transformer", None)
         == "custom_collection"
     )
+
+
+def test_eval_command_prints_summary_and_details(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    knowledge_dir = tmp_path / "data" / "knowledge"
+    knowledge_dir.mkdir(parents=True)
+    (knowledge_dir / "rag-intro.md").write_text(
+        "RAG 是检索增强生成，也就是 retrieval augmented generation.",
+        encoding="utf-8",
+    )
+    eval_dir = tmp_path / "data" / "eval"
+    eval_dir.mkdir(parents=True)
+    eval_file = eval_dir / "questions.jsonl"
+    eval_file.write_text(
+        '{"question":"什么是 RAG？","expected_answer":"检索增强生成",'
+        '"expected_citations":["rag-intro.md#chunk-0"]}\n',
+        encoding="utf-8",
+    )
+
+    ingest_result = runner.invoke(app, ["ingest", str(knowledge_dir)])
+    assert ingest_result.exit_code == 0
+
+    eval_result = runner.invoke(app, ["eval", str(eval_file), "--top-k", "1"])
+
+    assert eval_result.exit_code == 0
+    assert "Evaluation Summary" in eval_result.output
+    assert "retrieval_hit_rate" in eval_result.output
+    assert "answer_contains_expected_rate" in eval_result.output
+    assert "rag-intro.md#chunk-0" in eval_result.output
+
+
+def test_eval_command_reports_invalid_jsonl(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    eval_file = tmp_path / "questions.jsonl"
+    eval_file.write_text('{"question":"broken"\n', encoding="utf-8")
+
+    result = runner.invoke(app, ["eval", str(eval_file)])
+
+    assert result.exit_code != 0
+    assert "line 1" in result.output
