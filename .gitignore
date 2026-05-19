@@ -8,3 +8,5 @@ __pycache__/
 
 data/storage/*
 !data/storage/.gitkeep
+
+models/
