@@ -18,6 +18,8 @@ console = Console()
 EmbeddingBackend = Literal["hash", "sentence-transformer"]
 StoreBackend = Literal["json", "chroma"]
 LLMBackend = Literal["offline", "claude"]
+DEFAULT_JSON_STORAGE_PATH = Path("data/storage/hash-store.json")
+DEFAULT_CHROMA_STORAGE_PATH = Path("data/storage/chroma")
 
 
 @app.command()
@@ -25,9 +27,7 @@ def ingest(
     path: Annotated[Path, typer.Argument(help="Knowledge file or directory to ingest")],
     store_backend: Annotated[StoreBackend, typer.Option("--store-backend")] = "json",
     embedding_backend: Annotated[EmbeddingBackend, typer.Option("--embedding-backend")] = "hash",
-    storage_path: Annotated[Path, typer.Option("--storage-path")] = Path(
-        "data/storage/hash-store.json"
-    ),
+    storage_path: Annotated[Path | None, typer.Option("--storage-path")] = None,
     collection: Annotated[str, typer.Option("--collection")] = "rag_learning",
     chunk_size: Annotated[int, typer.Option("--chunk-size")] = 800,
     overlap: Annotated[int, typer.Option("--overlap")] = 100,
@@ -48,9 +48,7 @@ def search(
     top_k: Annotated[int, typer.Option("--top-k")] = 5,
     store_backend: Annotated[StoreBackend, typer.Option("--store-backend")] = "json",
     embedding_backend: Annotated[EmbeddingBackend, typer.Option("--embedding-backend")] = "hash",
-    storage_path: Annotated[Path, typer.Option("--storage-path")] = Path(
-        "data/storage/hash-store.json"
-    ),
+    storage_path: Annotated[Path | None, typer.Option("--storage-path")] = None,
     collection: Annotated[str, typer.Option("--collection")] = "rag_learning",
 ) -> None:
     pipeline = RagPipeline(
@@ -68,9 +66,7 @@ def ask(
     llm_backend: Annotated[LLMBackend, typer.Option("--llm-backend")] = "offline",
     store_backend: Annotated[StoreBackend, typer.Option("--store-backend")] = "json",
     embedding_backend: Annotated[EmbeddingBackend, typer.Option("--embedding-backend")] = "hash",
-    storage_path: Annotated[Path, typer.Option("--storage-path")] = Path(
-        "data/storage/hash-store.json"
-    ),
+    storage_path: Annotated[Path | None, typer.Option("--storage-path")] = None,
     collection: Annotated[str, typer.Option("--collection")] = "rag_learning",
 ) -> None:
     pipeline = RagPipeline(
@@ -82,14 +78,23 @@ def ask(
 
 def _create_store(
     store_backend: StoreBackend,
-    storage_path: Path,
+    storage_path: Path | None,
     collection: str,
     embedding_backend: EmbeddingBackend,
 ) -> JsonVectorStore | ChromaVectorStore:
     embedding_model = _create_embedding_model(embedding_backend)
+    resolved_storage_path = _resolve_storage_path(store_backend, storage_path)
     if store_backend == "json":
-        return JsonVectorStore(storage_path, embedding_model)
-    return ChromaVectorStore(storage_path, collection, embedding_model)
+        return JsonVectorStore(resolved_storage_path, embedding_model)
+    return ChromaVectorStore(resolved_storage_path, collection, embedding_model)
+
+
+def _resolve_storage_path(store_backend: StoreBackend, storage_path: Path | None) -> Path:
+    if storage_path is not None:
+        return storage_path
+    if store_backend == "json":
+        return DEFAULT_JSON_STORAGE_PATH
+    return DEFAULT_CHROMA_STORAGE_PATH
 
 
 def _create_embedding_model(embedding_backend: EmbeddingBackend) -> HashEmbeddingModel:

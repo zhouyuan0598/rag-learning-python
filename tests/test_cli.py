@@ -2,7 +2,7 @@ from pathlib import Path
 
 from typer.testing import CliRunner
 
-from rag_learning.cli import app
+from rag_learning.cli import _resolve_storage_path, app
 
 runner = CliRunner()
 
@@ -23,3 +23,8 @@ def test_ask_command_preserves_source_citation_markup(tmp_path: Path, monkeypatc
 
     assert ask_result.exit_code == 0
     assert "[rag.md#chunk-0]" in ask_result.output
+
+
+def test_resolve_storage_path_uses_directory_default_for_chroma() -> None:
+    assert _resolve_storage_path("json", None) == Path("data/storage/hash-store.json")
+    assert _resolve_storage_path("chroma", None) == Path("data/storage/chroma")
