@@ -24,6 +24,10 @@ uv run pytest
 uv run rag --help
 ```
 
+## 学习笔记
+
+- [RAG 检索与评估学习笔记](docs/rag-retrieval-theory.md)：BM25、向量检索、Hybrid Search、Reranker、`recall@k`、`precision@k`、`MRR`、`nDCG`。
+
 ## 使用本地语义检索依赖
 
 ```bash
