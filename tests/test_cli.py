@@ -30,6 +30,28 @@ def test_ask_command_preserves_source_citation_markup(tmp_path: Path, monkeypatc
     assert "[rag.md#chunk-0]" in ask_result.output
 
 
+def test_ask_command_can_show_prompt_without_calling_llm(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    knowledge_dir = tmp_path / "data" / "knowledge"
+    knowledge_dir.mkdir(parents=True)
+    (knowledge_dir / "rag.md").write_text(
+        "RAG means retrieval augmented generation.",
+        encoding="utf-8",
+    )
+
+    ingest_result = runner.invoke(app, ["ingest", str(knowledge_dir)])
+    assert ingest_result.exit_code == 0
+
+    ask_result = runner.invoke(app, ["ask", "What is RAG?", "--top-k", "1", "--show-prompt"])
+
+    assert ask_result.exit_code == 0
+    assert "System prompt:" in ask_result.output
+    assert "User prompt:" in ask_result.output
+    assert "Question:\nWhat is RAG?" in ask_result.output
+    assert "[rag.md#chunk-0]" in ask_result.output
+    assert "RAG means retrieval augmented generation." in ask_result.output
+
+
 def test_resolve_storage_path_uses_directory_default_for_chroma() -> None:
     assert _resolve_storage_path("json", None) == Path("data/storage/hash-store.json")
     assert _resolve_storage_path("chroma", None) == Path("data/storage/chroma")

@@ -5,6 +5,11 @@ from typing import Protocol
 
 from rag_learning.models import RetrievedChunk
 
+SYSTEM_PROMPT = (
+    "You answer questions using only the provided retrieved context. "
+    "Cite sources with the citation labels. If context is insufficient, say so."
+)
+
 
 class LLMClient(Protocol):
     def generate(self, question: str, contexts: list[RetrievedChunk]) -> str:
@@ -66,10 +71,7 @@ class ClaudeLLM:
         message = self.client.messages.create(
             model=self.model,
             max_tokens=self.max_tokens,
-            system=(
-                "You answer questions using only the provided retrieved context. "
-                "Cite sources with the citation labels. If context is insufficient, say so."
-            ),
+            system=SYSTEM_PROMPT,
             messages=[
                 {
                     "role": "user",

@@ -8,7 +8,7 @@ from rich.console import Console
 from rich.table import Table
 
 from rag_learning.embeddings import EmbeddingModel, HashEmbeddingModel, SentenceTransformerEmbedding
-from rag_learning.llm_client import ClaudeLLM, OfflineContextLLM
+from rag_learning.llm_client import SYSTEM_PROMPT, ClaudeLLM, OfflineContextLLM, build_prompt
 from rag_learning.rag_pipeline import RagPipeline
 from rag_learning.vector_store import ChromaVectorStore, JsonVectorStore
 
@@ -76,6 +76,7 @@ def ask(
     embedding_model: Annotated[str | None, typer.Option("--embedding-model")] = None,
     storage_path: Annotated[Path | None, typer.Option("--storage-path")] = None,
     collection: Annotated[str | None, typer.Option("--collection")] = None,
+    show_prompt: Annotated[bool, typer.Option("--show-prompt")] = False,
 ) -> None:
     pipeline = RagPipeline(
         store=_create_store(
@@ -83,6 +84,14 @@ def ask(
         ),
         llm=_create_llm(llm_backend),
     )
+    if show_prompt:
+        contexts = pipeline.search(question, top_k=top_k)
+        console.print("System prompt:", style="bold")
+        console.print(SYSTEM_PROMPT, markup=False)
+        console.print("\nUser prompt:", style="bold")
+        console.print(build_prompt(question, contexts), markup=False)
+        return
+
     console.print(pipeline.answer(question, top_k=top_k), markup=False)
 
 
