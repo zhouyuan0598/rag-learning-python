@@ -73,6 +73,38 @@ class BM25Retriever:
         return math.log(1 + (document_count - document_frequency + 0.5) / (document_frequency + 0.5))
 
 
+class HybridRetriever:
+    def __init__(
+        self,
+        retrievers: Sequence[Retriever],
+        rrf_k: int = 60,
+    ) -> None:
+        self.retrievers = list(retrievers)
+        self.rrf_k = rrf_k
+
+    def search(self, query: str, top_k: int = 5) -> list[RetrievedChunk]:
+        if top_k <= 0:
+            raise ValueError("top_k must be greater than 0")
+
+        candidate_count = max(top_k * 4, top_k)
+        chunks_by_citation: dict[str, Chunk] = {}
+        scores_by_citation: dict[str, float] = {}
+        for retriever in self.retrievers:
+            for rank, result in enumerate(retriever.search(query, top_k=candidate_count), 1):
+                citation = result.chunk.citation
+                chunks_by_citation.setdefault(citation, result.chunk)
+                scores_by_citation[citation] = scores_by_citation.get(citation, 0.0) + (
+                    1 / (self.rrf_k + rank)
+                )
+
+        ranked = [
+            RetrievedChunk(chunk=chunks_by_citation[citation], score=score)
+            for citation, score in scores_by_citation.items()
+        ]
+        ranked.sort(key=lambda result: result.score, reverse=True)
+        return ranked[:top_k]
+
+
 def _tokens(text: str) -> list[str]:
     return [match.group(0).lower() for match in TOKEN_PATTERN.finditer(text)]
 
