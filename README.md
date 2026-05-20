@@ -96,12 +96,14 @@ uv run rag ingest data/knowledge
 - `data/storage/hash-store.json`：默认 vector 检索索引。
 - `data/storage/bm25-index.json`：BM25 关键词检索索引。
 
+示例知识库现在包含 9 个本地 Markdown 文件，默认切分后约 25 个 chunk。评测集包含 100+ 条 JSONL case，覆盖基础概念、chunking、BM25、向量检索、Hybrid、Reranker、评估指标、生产化、失败排查、query rewrite 和 prompt/citation。
+
 再运行评测集：
 
 ```bash
-uv run rag eval data/eval/questions.jsonl --retriever vector --top-k 5
-uv run rag eval data/eval/questions.jsonl --retriever bm25 --top-k 5
-uv run rag eval data/eval/questions.jsonl --retriever hybrid --top-k 5
+uv run rag eval data/eval/questions.jsonl --retriever vector --top-k 2
+uv run rag eval data/eval/questions.jsonl --retriever bm25 --top-k 2
+uv run rag eval data/eval/questions.jsonl --retriever hybrid --top-k 2
 ```
 
 评估命令会输出整体指标和逐题明细：

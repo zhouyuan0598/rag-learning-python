@@ -179,10 +179,10 @@ RAG 里 recall 很关键，因为正确资料找不回来，后面无法回答�
 
 ### precision@k
 
-`precision@k` 看前 k 个结果里有多少是真的相关。
+`precision@k` 看前 k 个结果里有多少是真的相关。本项目按实际返回结果数计算分母，这样当知识库结果少于 k 时不会被额外惩罚。
 
 ```text
-precision@5 = 前 5 个结果中正确 citation 数 / 5
+precision@k = 前 k 个结果中正确 citation 数 / 实际返回结果数
 ```
 
 它回答：
@@ -227,7 +227,7 @@ nDCG 是 Normalized Discounted Cumulative Gain。它适合一个问题有多个�
 
 ## 8. 下一步项目改造建议
 
-当前项目已经可以升级成更完整的检索实验台：
+当前项目已经升级成更完整的检索实验台：
 
 ```text
 BM25 retriever
@@ -236,12 +236,22 @@ hybrid retriever
 recall@k / precision@k / MRR
 ```
 
+示例知识库也从单文件扩成了多文件学习数据集：
+
+```text
+9 个 Markdown 知识文件
+默认切分后约 25 个 chunk
+100+ 条 JSONL 评测问题
+```
+
+这个规模仍然适合手工阅读，但已经比 4 个 chunk 的 toy dataset 更能暴露检索器差异。比如 `top-k` 增大时，recall 可能上升，但 precision 会因为噪音 chunk 增多而下降。
+
 命令形态：
 
 ```bash
-uv run rag eval data/eval/questions.jsonl --retriever vector --top-k 5
-uv run rag eval data/eval/questions.jsonl --retriever bm25 --top-k 5
-uv run rag eval data/eval/questions.jsonl --retriever hybrid --top-k 5
+uv run rag eval data/eval/questions.jsonl --retriever vector --top-k 2
+uv run rag eval data/eval/questions.jsonl --retriever bm25 --top-k 2
+uv run rag eval data/eval/questions.jsonl --retriever hybrid --top-k 2
 ```
 
 当前项目里的 BM25 已经不再默认在查询时扫描 `data/knowledge` 临时构建。生产式路径是：

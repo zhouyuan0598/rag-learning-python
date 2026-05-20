@@ -1,21 +1,103 @@
 {"question":"RAG 的中文含义是什么？","expected_answer":"检索增强生成","expected_citations":["rag-intro.md#chunk-0"]}
-{"question":"一个最小 RAG 流程包括哪些步骤？","expected_answer":"加载文档、切分 chunk、生成 embedding","expected_citations":["rag-intro.md#chunk-0"]}
-{"question":"chunk 太大和太小分别有什么问题？","expected_answer":"chunk 太大时，检索结果可能包含很多无关内容","expected_citations":["rag-intro.md#chunk-0"]}
-{"question":"overlap 的作用是什么？","expected_answer":"减少边界信息丢失","expected_citations":["rag-intro.md#chunk-0"]}
-{"question":"BM25 是什么？","expected_answer":"经典关键词检索算法","expected_citations":["rag-intro.md#chunk-0","rag-intro.md#chunk-1"]}
-{"question":"BM25 对哪些精确词更可靠？","expected_answer":"RRF、Chroma、API key、HTTP 500","expected_citations":["rag-intro.md#chunk-0","rag-intro.md#chunk-1"]}
-{"question":"向量检索为什么能找到改写后的问题？","expected_answer":"语义相近的文本，向量距离通常更近","expected_citations":["rag-intro.md#chunk-1"]}
-{"question":"向量检索有什么风险？","expected_answer":"精确词可能被稀释","expected_citations":["rag-intro.md#chunk-1"]}
-{"question":"Hybrid Search 的目标是什么？","expected_answer":"同时利用 BM25 的关键词稳定性和向量检索的语义泛化能力","expected_citations":["rag-intro.md#chunk-1"]}
-{"question":"RRF 为什么适合学习阶段？","expected_answer":"不同检索器的原始分数不在同一量纲","expected_citations":["rag-intro.md#chunk-1"]}
-{"question":"Reranker 在 RAG 里做什么？","expected_answer":"第二阶段排序器","expected_citations":["rag-intro.md#chunk-1","rag-intro.md#chunk-2"]}
-{"question":"两阶段检索的典型流程是什么？","expected_answer":"粗召回 top-20，rerank top-5","expected_citations":["rag-intro.md#chunk-2"]}
-{"question":"recall@k 衡量什么？","expected_answer":"正确 chunk 有没有被前 k 个结果找回来","expected_citations":["rag-intro.md#chunk-2"]}
-{"question":"precision@k 衡量什么？","expected_answer":"前 k 个结果里有多少是真的相关","expected_citations":["rag-intro.md#chunk-2"]}
-{"question":"MRR 关注什么？","expected_answer":"第一个正确结果排第几","expected_citations":["rag-intro.md#chunk-2"]}
-{"question":"RAG 比微调更适合哪些场景？","expected_answer":"知识经常变化、需要引用来源、需要接入私有文档","expected_citations":["rag-intro.md#chunk-2","rag-intro.md#chunk-3"]}
-{"question":"微调更适合解决什么问题？","expected_answer":"改变模型行为、输出风格、领域表达习惯或固定任务格式","expected_citations":["rag-intro.md#chunk-3"]}
-{"question":"RAG 常用于哪些应用？","expected_answer":"企业知识库问答、文档助手、客服助手","expected_citations":["rag-intro.md#chunk-3"]}
-{"question":"代码知识库里 BM25 和向量检索各自有什么用？","expected_answer":"BM25 对函数名、类名、错误码和配置项很有用","expected_citations":["rag-intro.md#chunk-3"]}
-{"question":"常见检索失败模式有哪些？","expected_answer":"切分问题","expected_citations":["rag-intro.md#chunk-3"]}
-{"question":"查询表达问题可以用什么缓解？","expected_answer":"query rewrite、metadata filter、Hybrid Search 或 reranker","expected_citations":["rag-intro.md#chunk-3"]}
+{"question":"RAG 回答问题前会先做什么？","expected_answer":"先从外部知识库检索相关资料","expected_citations":["rag-intro.md#chunk-0"]}
+{"question":"什么时候应该优先考虑 RAG？","expected_answer":"问题依赖一批可以更新的文档","expected_citations":["rag-intro.md#chunk-0"]}
+{"question":"最小 RAG 系统通常包含哪七步？","expected_answer":"加载文档、切分 chunk、生成 embedding","expected_citations":["rag-intro.md#chunk-0"]}
+{"question":"项目里的 rag ingest 对应 RAG 流程中的哪些步骤？","expected_answer":"对应前四步","expected_citations":["rag-intro.md#chunk-0"]}
+{"question":"RAG 常见适用场景有哪些？","expected_answer":"企业知识库问答、产品手册助手、客服知识库","expected_citations":["rag-intro.md#chunk-0","rag-intro.md#chunk-1"]}
+{"question":"为什么 RAG 场景里事实来源很重要？","expected_answer":"用户不仅想要答案，还想知道答案来自哪份资料","expected_citations":["rag-intro.md#chunk-1"]}
+{"question":"RAG 不能自动保证答案正确的原因是什么？","expected_answer":"检索错了，LLM 就会拿错上下文回答","expected_citations":["rag-intro.md#chunk-1"]}
+{"question":"生产系统里 RAG 为什么不能替代权限控制？","expected_answer":"用户没有权限访问的文档，不应该进入候选集","expected_citations":["rag-intro.md#chunk-1"]}
+{"question":"项目里的 RetrievedChunk 表示什么？","expected_answer":"带分数的检索结果","expected_citations":["rag-intro.md#chunk-1"]}
+{"question":"vector、bm25、hybrid 三种检索在项目里分别表示什么？","expected_answer":"vector 检索使用 embedding 和向量相似度","expected_citations":["rag-intro.md#chunk-1"]}
+{"question":"一次 RAG 查询的数据流是什么？","expected_answer":"用户提出问题后，系统先把问题交给 retriever","expected_citations":["rag-intro.md#chunk-1","rag-intro.md#chunk-2"]}
+{"question":"OfflineContextLLM 为什么不能代表完整生成质量？","expected_answer":"这不是完整的生成质量评估","expected_citations":["rag-intro.md#chunk-2"]}
+{"question":"生产 RAG 的基本要求包括哪些？","expected_answer":"稳定的索引文件或数据库、可重复的 ingest 流程","expected_citations":["rag-intro.md#chunk-2"]}
+{"question":"更稳的生产 RAG 路径里，查询服务负责重建索引吗？","expected_answer":"查询服务不负责重建全量索引","expected_citations":["rag-intro.md#chunk-2"]}
+{"question":"为什么 RAG 需要切分 chunk？","expected_answer":"让检索器可以返回最相关的一小段","expected_citations":["chunking-and-indexing.md#chunk-0"]}
+{"question":"一个好的 chunk 应该表达什么？","expected_answer":"一个相对完整的语义单元","expected_citations":["chunking-and-indexing.md#chunk-0"]}
+{"question":"chunk 太大会造成什么问题？","expected_answer":"chunk 太大会带来噪音","expected_citations":["chunking-and-indexing.md#chunk-0"]}
+{"question":"chunk 太小会造成什么问题？","expected_answer":"chunk 太小又会丢上下文","expected_citations":["chunking-and-indexing.md#chunk-0"]}
+{"question":"chunk size 变大和变小分别如何影响 recall 与 precision？","expected_answer":"较大的 chunk 通常提高 recall","expected_citations":["chunking-and-indexing.md#chunk-0"]}
+{"question":"学习阶段 chunk size 可以从什么范围开始试验？","expected_answer":"500 到 1000 字符","expected_citations":["chunking-and-indexing.md#chunk-0"]}
+{"question":"overlap 的主要作用是什么？","expected_answer":"缓解边界问题","expected_citations":["chunking-and-indexing.md#chunk-0","chunking-and-indexing.md#chunk-1"]}
+{"question":"overlap 太大的成本是什么？","expected_answer":"重复文本会增加索引体积","expected_citations":["chunking-and-indexing.md#chunk-1"]}
+{"question":"metadata filter 可以怎样缩小候选范围？","expected_answer":"只查产品手册、只查某个版本、只查用户有权限的空间","expected_citations":["chunking-and-indexing.md#chunk-1"]}
+{"question":"uv run rag ingest data/knowledge 这个命令在项目中做什么？","expected_answer":"把知识目录里的文档加载、切分并写入索引","expected_citations":["chunking-and-indexing.md#chunk-1"]}
+{"question":"为什么 ingest 不应该放在每次查询里执行？","expected_answer":"查询服务应该使用已经构建好的索引","expected_citations":["chunking-and-indexing.md#chunk-1"]}
+{"question":"全量索引和增量索引有什么区别？","expected_answer":"增量索引只处理新增、修改或删除的文档","expected_citations":["chunking-and-indexing.md#chunk-2"]}
+{"question":"索引版本可以记录哪些信息？","expected_answer":"chunk 参数、embedding 模型、BM25 参数","expected_citations":["chunking-and-indexing.md#chunk-2"]}
+{"question":"BM25 是什么？","expected_answer":"经典关键词检索算法","expected_citations":["bm25-and-vector.md#chunk-0"]}
+{"question":"BM25 的 k1 和 b 参数分别控制什么？","expected_answer":"k1 控制词频增长的饱和程度","expected_citations":["bm25-and-vector.md#chunk-0"]}
+{"question":"BM25 对哪些精确词更可靠？","expected_answer":"错误码、函数名、类名、配置项","expected_citations":["bm25-and-vector.md#chunk-0"]}
+{"question":"为什么 BM25 容易解释？","expected_answer":"因为哪些词命中了、这些词有多稀有","expected_citations":["bm25-and-vector.md#chunk-0"]}
+{"question":"BM25 面对同义改写有什么弱点？","expected_answer":"同义改写能力差","expected_citations":["bm25-and-vector.md#chunk-0"]}
+{"question":"向量检索中的 embedding 是什么？","expected_answer":"一组数字向量","expected_citations":["bm25-and-vector.md#chunk-0"]}
+{"question":"向量检索适合哪些自然语言问题？","expected_answer":"自然语言问题、概念解释、语义改写","expected_citations":["bm25-and-vector.md#chunk-0","bm25-and-vector.md#chunk-1"]}
+{"question":"向量检索为什么可能不适合错误码和短缩写？","expected_answer":"精确词被稀释","expected_citations":["bm25-and-vector.md#chunk-1"]}
+{"question":"更换 embedding 模型时为什么要重建向量索引？","expected_answer":"生产系统更换 embedding 模型时必须重建向量索引","expected_citations":["bm25-and-vector.md#chunk-1"]}
+{"question":"Hybrid Search 的目标是什么？","expected_answer":"同时利用 BM25 的关键词稳定性和向量检索的语义泛化能力","expected_citations":["bm25-and-vector.md#chunk-1"]}
+{"question":"RRF 为什么不直接相加 BM25 和向量分数？","expected_answer":"两者分数尺度完全不同","expected_citations":["bm25-and-vector.md#chunk-1"]}
+{"question":"RRF 的公式可以怎样理解？","expected_answer":"1 / (rrf_k + rank)","expected_citations":["bm25-and-vector.md#chunk-1","bm25-and-vector.md#chunk-2"]}
+{"question":"Hybrid 在什么情况下可能变差？","expected_answer":"top-k 很小，而 BM25 和 vector 的排序分歧很大","expected_citations":["bm25-and-vector.md#chunk-2"]}
+{"question":"Hybrid 变差时可以怎样缓解？","expected_answer":"扩大候选池、加 reranker、调大最终 top-k","expected_citations":["bm25-and-vector.md#chunk-2"]}
+{"question":"为什么需要 reranker？","expected_answer":"在候选集上做第二阶段精排","expected_citations":["reranking.md#chunk-0"]}
+{"question":"reranker 和普通 embedding 比较有什么不同？","expected_answer":"把两者放在一起理解","expected_citations":["reranking.md#chunk-0"]}
+{"question":"两阶段检索的典型流程是什么？","expected_answer":"第一阶段粗召回 top-20 或 top-50，第二阶段 rerank","expected_citations":["reranking.md#chunk-0"]}
+{"question":"为什么不直接让 reranker 扫描全库？","expected_answer":"成本会非常高","expected_citations":["reranking.md#chunk-0"]}
+{"question":"reranker 对相似概念干扰有什么帮助？","expected_answer":"更精确地判断 precision 相关段落应该排在前面","expected_citations":["reranking.md#chunk-0","reranking.md#chunk-1"]}
+{"question":"reranker 会带来什么成本？","expected_answer":"增加延迟和费用","expected_citations":["reranking.md#chunk-1"]}
+{"question":"score threshold 的目标是什么？","expected_answer":"分数太低的 chunk 不要为了凑满 top-k 被塞进上下文","expected_citations":["reranking.md#chunk-1"]}
+{"question":"为什么不同检索器的阈值不能直接共用？","expected_answer":"分数尺度不同，阈值不能直接共用","expected_citations":["reranking.md#chunk-1"]}
+{"question":"多路召回通常会召回哪些候选？","expected_answer":"BM25 召回一批，向量召回一批","expected_citations":["reranking.md#chunk-1"]}
+{"question":"什么时候 reranker 才更有价值？","expected_answer":"recall 已经不错但 precision 或 MRR 不理想","expected_citations":["reranking.md#chunk-2"]}
+{"question":"为什么 RAG 系统不能只靠感觉调参？","expected_answer":"评估集的作用是把检索质量、排序质量、回答质量和延迟变成可比较的数字","expected_citations":["evaluation-metrics.md#chunk-0"]}
+{"question":"一个好的评估集应该包含哪些字段和问题类型？","expected_answer":"真实问题、期望答案、期望 citation 和问题类型","expected_citations":["evaluation-metrics.md#chunk-0"]}
+{"question":"retrieval_hit_rate 衡量什么？","expected_answer":"top-k 结果里是否至少有一个正确 citation","expected_citations":["evaluation-metrics.md#chunk-0"]}
+{"question":"为什么 retrieval_hit_rate 不够细？","expected_answer":"不能告诉你找回得全不全","expected_citations":["evaluation-metrics.md#chunk-0"]}
+{"question":"recall@k 衡量什么？","expected_answer":"正确 chunk 有没有被前 k 个结果找回来","expected_citations":["evaluation-metrics.md#chunk-0"]}
+{"question":"precision@k 衡量什么？","expected_answer":"前 k 个结果里有多少是真的相关","expected_citations":["evaluation-metrics.md#chunk-0","evaluation-metrics.md#chunk-1"]}
+{"question":"为什么小知识库里 precision 容易失真？","expected_answer":"系统几乎会返回整个知识库","expected_citations":["evaluation-metrics.md#chunk-1"]}
+{"question":"MRR 关注什么？","expected_answer":"第一个正确结果排第几","expected_citations":["evaluation-metrics.md#chunk-1"]}
+{"question":"nDCG 适合什么样的评测集？","expected_answer":"有相关性等级的评测集","expected_citations":["evaluation-metrics.md#chunk-1"]}
+{"question":"answer_contains_expected_rate 在离线模式下主要反映什么？","expected_answer":"expected_answer 是否出现在检索上下文里","expected_citations":["evaluation-metrics.md#chunk-2"]}
+{"question":"avg_retrieval_ms 和 avg_answer_ms 分别衡量什么？","expected_answer":"平均检索耗时","expected_citations":["evaluation-metrics.md#chunk-2"]}
+{"question":"生产环境为什么不应该查询时临时构建 BM25 索引？","expected_answer":"延迟不可控、CPU 和内存浪费","expected_citations":["production-rag.md#chunk-0"]}
+{"question":"生产系统为什么要把 ingest 和 query 分成两个链路？","expected_answer":"生产系统应该把 ingest 和 query 分成两个链路","expected_citations":["production-rag.md#chunk-0"]}
+{"question":"BM25 索引的核心数据有哪些？","expected_answer":"chunk 文本、分词结果、文档频率、平均文档长度和参数","expected_citations":["production-rag.md#chunk-0"]}
+{"question":"个人学习场景 BM25 可以用什么存储？","expected_answer":"本地 JSON 索引足够理解原理","expected_citations":["production-rag.md#chunk-0"]}
+{"question":"哪些搜索引擎常用于更大规模 BM25 检索？","expected_answer":"Elasticsearch、OpenSearch、Lucene","expected_citations":["production-rag.md#chunk-0"]}
+{"question":"向量索引可以存到哪些系统？","expected_answer":"Chroma、FAISS、Milvus、Qdrant","expected_citations":["production-rag.md#chunk-0"]}
+{"question":"生产 RAG 的 ingest 服务负责什么？","expected_answer":"监听文档变化、拉取内容、清洗格式","expected_citations":["production-rag.md#chunk-0","production-rag.md#chunk-1"]}
+{"question":"ingest 失败时线上查询应该怎样？","expected_answer":"旧索引应该继续服务","expected_citations":["production-rag.md#chunk-1"]}
+{"question":"query 服务负责哪些事情？","expected_answer":"接收用户问题、执行权限校验、改写 query","expected_citations":["production-rag.md#chunk-1"]}
+{"question":"query 服务应该记录哪些关键日志？","expected_answer":"用户问题、检索器类型、top-k","expected_citations":["production-rag.md#chunk-1"]}
+{"question":"权限过滤为什么必须发生在上下文进入 LLM 之前？","expected_answer":"模型不是安全边界","expected_citations":["production-rag.md#chunk-1"]}
+{"question":"生产 RAG 需要监控哪些指标？","expected_answer":"检索命中率、空结果率、低分结果比例","expected_citations":["production-rag.md#chunk-1","production-rag.md#chunk-2"]}
+{"question":"用户反馈应该如何沉淀？","expected_answer":"能复现的问题应该加入 JSONL eval","expected_citations":["production-rag.md#chunk-2"]}
+{"question":"知识库没有答案时 RAG 会怎样失败？","expected_answer":"不能从不存在的文档里找到证据","expected_citations":["failure-cases.md#chunk-0"]}
+{"question":"知识缺失时应该怎样处理？","expected_answer":"补文档、补 FAQ、接入新的数据源","expected_citations":["failure-cases.md#chunk-0"]}
+{"question":"chunk 切分错误有哪些表现？","expected_answer":"标题和正文分离、表格被截断、步骤列表被切开","expected_citations":["failure-cases.md#chunk-0"]}
+{"question":"召回失败是什么意思？","expected_answer":"正确 chunk 没有进入 top-k","expected_citations":["failure-cases.md#chunk-0"]}
+{"question":"召回失败可以用什么缓解？","expected_answer":"query rewrite、同义词扩展、metadata filter","expected_citations":["failure-cases.md#chunk-0"]}
+{"question":"排序失败是什么意思？","expected_answer":"正确 chunk 进入候选集但排得太靠后","expected_citations":["failure-cases.md#chunk-0","failure-cases.md#chunk-1"]}
+{"question":"排序问题为什么不能只看 retrieval_hit_rate？","expected_answer":"并不说明它排得好","expected_citations":["failure-cases.md#chunk-1"]}
+{"question":"查询表达问题有哪些例子？","expected_answer":"用户问题可能太短、上下文缺失、术语不一致或包含多重意图","expected_citations":["failure-cases.md#chunk-1"]}
+{"question":"上下文组装问题有哪些表现？","expected_answer":"上下文顺序混乱、citation 丢失、重复 chunk 太多","expected_citations":["failure-cases.md#chunk-1"]}
+{"question":"生成阶段问题需要哪些约束？","expected_answer":"引用约束、拒答策略、答案格式约束和事实一致性检查","expected_citations":["failure-cases.md#chunk-1"]}
+{"question":"RAG 失败排查的实用顺序是什么？","expected_answer":"先确认知识是否存在，再看 chunk 是否合理","expected_citations":["failure-cases.md#chunk-2"]}
+{"question":"为什么失败案例应该变成 eval case？","expected_answer":"评估集不是一次性文件，而是系统学习经验的沉淀","expected_citations":["failure-cases.md#chunk-2"]}
+{"question":"为什么需要 query rewrite？","expected_answer":"把用户原始问题改写成更适合检索的查询表达","expected_citations":["query-rewrite-and-routing.md#chunk-0"]}
+{"question":"query rewrite 可以怎样处理 precision 低的问题？","expected_answer":"precision@k 低说明上下文噪音多","expected_citations":["query-rewrite-and-routing.md#chunk-0"]}
+{"question":"query rewrite 的风险是什么？","expected_answer":"可能把检索带偏","expected_citations":["query-rewrite-and-routing.md#chunk-0"]}
+{"question":"检索路由如何选择 BM25 或向量检索？","expected_answer":"包含错误码、函数名、配置项和精确字段的问题，可以优先走 BM25","expected_citations":["query-rewrite-and-routing.md#chunk-0"]}
+{"question":"多意图问题更稳的处理方式是什么？","expected_answer":"把问题拆成多个子查询，分别检索，再合并上下文","expected_citations":["query-rewrite-and-routing.md#chunk-0","query-rewrite-and-routing.md#chunk-1"]}
+{"question":"如何评估 query rewrite 是否值得上线？","expected_answer":"A/B 对比","expected_citations":["query-rewrite-and-routing.md#chunk-1"]}
+{"question":"RAG 的 prompt 组装要明确区分哪些内容？","expected_answer":"哪些内容是系统指令，哪些是用户问题，哪些是检索上下文","expected_citations":["prompt-and-citations.md#chunk-0"]}
+{"question":"好的 prompt 应该要求模型做什么？","expected_answer":"引用来源、在证据不足时拒答、不要编造","expected_citations":["prompt-and-citations.md#chunk-0"]}
+{"question":"上下文顺序为什么会影响答案？","expected_answer":"通常应把最相关的 chunk 放在前面","expected_citations":["prompt-and-citations.md#chunk-0"]}
+{"question":"citation 的价值是什么？","expected_answer":"让用户知道答案来自哪个文档、哪个 chunk","expected_citations":["prompt-and-citations.md#chunk-0"]}
+{"question":"本项目的 citation 格式是什么？","expected_answer":"文件名#chunk-序号","expected_citations":["prompt-and-citations.md#chunk-0"]}
+{"question":"RAG 什么时候应该拒答？","expected_answer":"检索结果为空、分数过低、citation 不可信或上下文没有答案","expected_citations":["prompt-and-citations.md#chunk-0","prompt-and-citations.md#chunk-1"]}
+{"question":"拒答策略可以结合哪些信号？","expected_answer":"score threshold、最小命中数量、metadata 过滤结果和 LLM 自检","expected_citations":["prompt-and-citations.md#chunk-1"]}
+{"question":"RAG 为什么需要考虑 prompt injection？","expected_answer":"RAG 会把外部文档放进 prompt","expected_citations":["prompt-and-citations.md#chunk-1"]}
+{"question":"prompt injection 的防护思路是什么？","expected_answer":"把检索内容明确标记为不可信资料","expected_citations":["prompt-and-citations.md#chunk-1"]}
