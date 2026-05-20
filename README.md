@@ -91,6 +91,11 @@ uv run rag ask "RAG 和微调有什么区别" --llm-backend claude
 uv run rag ingest data/knowledge
 ```
 
+这一步会同时写入两个本地索引文件：
+
+- `data/storage/hash-store.json`：默认 vector 检索索引。
+- `data/storage/bm25-index.json`：BM25 关键词检索索引。
+
 再运行评测集：
 
 ```bash
@@ -109,7 +114,13 @@ uv run rag eval data/eval/questions.jsonl --retriever hybrid --top-k 5
 - `avg_top_score`：每题最高检索分数的平均值。
 - `avg_retrieval_ms` / `avg_answer_ms`：检索与回答生成耗时。
 
-`--retriever vector` 使用已索引的向量存储，所以需要先运行 `rag ingest`。`--retriever bm25` 会直接从 `--knowledge-path` 加载文档并构建内存关键词索引。`--retriever hybrid` 会把向量检索和 BM25 检索结果用 RRF 融合。
+`--retriever vector` 使用已索引的向量存储。`--retriever bm25` 默认读取已持久化的 BM25 索引。`--retriever hybrid` 会把向量检索和 BM25 检索结果用 RRF 融合。因此生产式路径都应该先运行 `rag ingest`。
+
+学习或调试时，也可以显式让 BM25 在评估时临时从知识库构建索引：
+
+```bash
+uv run rag eval data/eval/questions.jsonl --retriever bm25 --build-bm25-from-knowledge
+```
 
 评测集使用 JSONL，每行一个问题：
 

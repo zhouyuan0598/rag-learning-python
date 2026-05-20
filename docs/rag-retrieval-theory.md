@@ -244,6 +244,20 @@ uv run rag eval data/eval/questions.jsonl --retriever bm25 --top-k 5
 uv run rag eval data/eval/questions.jsonl --retriever hybrid --top-k 5
 ```
 
+当前项目里的 BM25 已经不再默认在查询时扫描 `data/knowledge` 临时构建。生产式路径是：
+
+```text
+rag ingest
+-> 写 vector 索引 data/storage/hash-store.json
+-> 写 BM25 索引 data/storage/bm25-index.json
+
+rag eval --retriever bm25
+-> 读取 data/storage/bm25-index.json
+-> 计算 BM25 分数
+```
+
+`--build-bm25-from-knowledge` 是学习和调试开关，用来观察“临时构建索引”这条路径，不是默认生产式路径。
+
 再进一步可以做实验矩阵：
 
 ```bash
@@ -265,14 +279,8 @@ top_k 增大后 precision 是否下降？
 ## 9. 当前项目中的对应位置
 
 - `src/rag_learning/vector_store.py`：当前向量检索和 JSON/Chroma 存储位置。
+- `src/rag_learning/bm25_store.py`：当前本地 BM25 索引持久化位置。
+- `src/rag_learning/retrievers.py`：BM25、Hybrid 和通用 retriever 接口位置。
 - `src/rag_learning/evaluation.py`：当前评估数据解析和指标计算位置。
 - `src/rag_learning/cli.py`：`rag ingest`、`rag search`、`rag ask`、`rag eval` 命令入口。
 - `data/eval/questions.jsonl`：当前最小评测集样例。
-
-后续如果实现 BM25，建议新增独立模块，而不是把逻辑塞进现有向量存储：
-
-```text
-src/rag_learning/retrievers.py
-```
-
-这样可以让 BM25、vector、hybrid 都实现同一种检索接口，方便 `rag eval --retriever ...` 做横向对比。
