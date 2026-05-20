@@ -75,6 +75,38 @@ def test_evaluate_cases_scores_retrieval_and_answer_quality() -> None:
     assert report.results[0].top_citation == "rag-intro.md#chunk-0"
 
 
+def test_evaluate_cases_reports_recall_precision_and_mrr() -> None:
+    store = InMemoryVectorStore(HashEmbeddingModel(dimension=32))
+    store.add(
+        [
+            Chunk(source=Path("rag.md"), index=0, text="unrelated filler"),
+            Chunk(source=Path("rag.md"), index=1, text="BM25 关键词检索"),
+            Chunk(source=Path("rag.md"), index=2, text="Hybrid Search 混合检索"),
+        ]
+    )
+    pipeline = RagPipeline(store=store, llm=OfflineContextLLM())
+
+    report = evaluate_cases(
+        pipeline,
+        [
+            EvaluationCase(
+                question="BM25",
+                expected_answer="BM25",
+                expected_citations=["rag.md#chunk-1", "rag.md#chunk-2"],
+            )
+        ],
+        top_k=2,
+    )
+
+    assert report.results[0].recall_at_k == 0.5
+    assert report.results[0].precision_at_k == 0.5
+    assert report.results[0].first_relevant_rank == 1
+    assert report.results[0].reciprocal_rank == 1.0
+    assert report.summary.recall_at_k == 0.5
+    assert report.summary.precision_at_k == 0.5
+    assert report.summary.mrr == 1.0
+
+
 def test_evaluate_cases_excludes_rows_without_expected_citations_from_hit_rate() -> None:
     store = InMemoryVectorStore(HashEmbeddingModel(dimension=32))
     store.add([Chunk(source=Path("rag-intro.md"), index=0, text="RAG 是检索增强生成。")])
@@ -93,4 +125,7 @@ def test_evaluate_cases_excludes_rows_without_expected_citations_from_hit_rate()
     )
 
     assert report.summary.retrieval_hit_rate == 0.0
+    assert report.summary.recall_at_k == 0.0
+    assert report.summary.precision_at_k == 0.0
+    assert report.summary.mrr == 0.0
     assert report.results[0].retrieval_hit is None

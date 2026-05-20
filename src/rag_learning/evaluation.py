@@ -20,6 +20,10 @@ class EvaluationResult:
     case: EvaluationCase
     retrieval_hit: bool | None
     answer_contains_expected: bool
+    recall_at_k: float | None
+    precision_at_k: float | None
+    reciprocal_rank: float | None
+    first_relevant_rank: int | None
     expected_citations: list[str]
     retrieved_citations: list[str]
     top_citation: str | None
@@ -32,6 +36,9 @@ class EvaluationResult:
 class EvaluationSummary:
     case_count: int
     retrieval_hit_rate: float
+    recall_at_k: float
+    precision_at_k: float
+    mrr: float
     answer_contains_expected_rate: float
     avg_top_score: float
     avg_retrieval_ms: float
@@ -104,6 +111,7 @@ def evaluate_cases(
             retrieval_hit = any(
                 citation in retrieved_citations for citation in case.expected_citations
             )
+        retrieval_metrics = _score_retrieval(case.expected_citations, retrieved_citations)
 
         top_result = retrieved[0] if retrieved else None
         results.append(
@@ -111,6 +119,10 @@ def evaluate_cases(
                 case=case,
                 retrieval_hit=retrieval_hit,
                 answer_contains_expected=_contains_expected(answer, case.expected_answer),
+                recall_at_k=retrieval_metrics.recall_at_k,
+                precision_at_k=retrieval_metrics.precision_at_k,
+                reciprocal_rank=retrieval_metrics.reciprocal_rank,
+                first_relevant_rank=retrieval_metrics.first_relevant_rank,
                 expected_citations=case.expected_citations,
                 retrieved_citations=retrieved_citations,
                 top_citation=top_result.chunk.citation if top_result else None,
@@ -131,13 +143,58 @@ def _normalize_text(value: str) -> str:
     return "".join(value.split()).lower()
 
 
+@dataclass(frozen=True)
+class _RetrievalMetrics:
+    recall_at_k: float | None
+    precision_at_k: float | None
+    reciprocal_rank: float | None
+    first_relevant_rank: int | None
+
+
+def _score_retrieval(
+    expected_citations: list[str],
+    retrieved_citations: list[str],
+) -> _RetrievalMetrics:
+    if not expected_citations:
+        return _RetrievalMetrics(
+            recall_at_k=None,
+            precision_at_k=None,
+            reciprocal_rank=None,
+            first_relevant_rank=None,
+        )
+
+    expected = set(expected_citations)
+    relevant_count = sum(1 for citation in retrieved_citations if citation in expected)
+    first_relevant_rank = _first_relevant_rank(expected, retrieved_citations)
+    return _RetrievalMetrics(
+        recall_at_k=relevant_count / len(expected),
+        precision_at_k=_rate(relevant_count, len(retrieved_citations)),
+        reciprocal_rank=0.0 if first_relevant_rank is None else 1 / first_relevant_rank,
+        first_relevant_rank=first_relevant_rank,
+    )
+
+
+def _first_relevant_rank(
+    expected_citations: set[str],
+    retrieved_citations: list[str],
+) -> int | None:
+    for rank, citation in enumerate(retrieved_citations, 1):
+        if citation in expected_citations:
+            return rank
+    return None
+
+
 def _summarize(results: list[EvaluationResult]) -> EvaluationSummary:
     hit_results = [result for result in results if result.retrieval_hit is not None]
+    metric_results = [result for result in results if result.recall_at_k is not None]
     return EvaluationSummary(
         case_count=len(results),
         retrieval_hit_rate=_rate(
             sum(1 for result in hit_results if result.retrieval_hit), len(hit_results)
         ),
+        recall_at_k=_average([result.recall_at_k for result in metric_results]),
+        precision_at_k=_average([result.precision_at_k for result in metric_results]),
+        mrr=_average([result.reciprocal_rank for result in metric_results]),
         answer_contains_expected_rate=_rate(
             sum(1 for result in results if result.answer_contains_expected), len(results)
         ),
@@ -153,7 +210,7 @@ def _rate(count: int, total: int) -> float:
     return count / total
 
 
-def _average(values: list[float]) -> float:
+def _average(values: list[float | None]) -> float:
     if not values:
         return 0.0
-    return sum(values) / len(values)
+    return sum(value for value in values if value is not None) / len(values)
