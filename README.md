@@ -94,15 +94,22 @@ uv run rag ingest data/knowledge
 再运行评测集：
 
 ```bash
-uv run rag eval data/eval/questions.jsonl --top-k 3
+uv run rag eval data/eval/questions.jsonl --retriever vector --top-k 5
+uv run rag eval data/eval/questions.jsonl --retriever bm25 --top-k 5
+uv run rag eval data/eval/questions.jsonl --retriever hybrid --top-k 5
 ```
 
 评估命令会输出整体指标和逐题明细：
 
 - `retrieval_hit_rate`：期望 citation 是否出现在 top-k 检索结果中。
+- `recall_at_k`：期望 citation 中有多少被前 k 个结果找回来。
+- `precision_at_k`：前 k 个结果里有多少属于期望 citation。
+- `mrr`：第一个正确 citation 排得越靠前，分数越高。
 - `answer_contains_expected_rate`：离线回答是否包含参考答案文本。
 - `avg_top_score`：每题最高检索分数的平均值。
 - `avg_retrieval_ms` / `avg_answer_ms`：检索与回答生成耗时。
+
+`--retriever vector` 使用已索引的向量存储，所以需要先运行 `rag ingest`。`--retriever bm25` 会直接从 `--knowledge-path` 加载文档并构建内存关键词索引。`--retriever hybrid` 会把向量检索和 BM25 检索结果用 RRF 融合。
 
 评测集使用 JSONL，每行一个问题：
 

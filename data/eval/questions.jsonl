@@ -1,2 +1,21 @@
-{"question":"什么是 RAG？","expected_answer":"检索增强生成","expected_citations":["rag-intro.md#chunk-0"]}
-{"question":"RAG 常用于哪些场景？","expected_answer":"企业知识库问答","expected_citations":["rag-intro.md#chunk-0"]}
+{"question":"RAG 的中文含义是什么？","expected_answer":"检索增强生成","expected_citations":["rag-intro.md#chunk-0"]}
+{"question":"一个最小 RAG 流程包括哪些步骤？","expected_answer":"加载文档、切分 chunk、生成 embedding","expected_citations":["rag-intro.md#chunk-0"]}
+{"question":"chunk 太大和太小分别有什么问题？","expected_answer":"chunk 太大时，检索结果可能包含很多无关内容","expected_citations":["rag-intro.md#chunk-0"]}
+{"question":"overlap 的作用是什么？","expected_answer":"减少边界信息丢失","expected_citations":["rag-intro.md#chunk-0"]}
+{"question":"BM25 是什么？","expected_answer":"经典关键词检索算法","expected_citations":["rag-intro.md#chunk-0","rag-intro.md#chunk-1"]}
+{"question":"BM25 对哪些精确词更可靠？","expected_answer":"RRF、Chroma、API key、HTTP 500","expected_citations":["rag-intro.md#chunk-0","rag-intro.md#chunk-1"]}
+{"question":"向量检索为什么能找到改写后的问题？","expected_answer":"语义相近的文本，向量距离通常更近","expected_citations":["rag-intro.md#chunk-1"]}
+{"question":"向量检索有什么风险？","expected_answer":"精确词可能被稀释","expected_citations":["rag-intro.md#chunk-1"]}
+{"question":"Hybrid Search 的目标是什么？","expected_answer":"同时利用 BM25 的关键词稳定性和向量检索的语义泛化能力","expected_citations":["rag-intro.md#chunk-1"]}
+{"question":"RRF 为什么适合学习阶段？","expected_answer":"不同检索器的原始分数不在同一量纲","expected_citations":["rag-intro.md#chunk-1"]}
+{"question":"Reranker 在 RAG 里做什么？","expected_answer":"第二阶段排序器","expected_citations":["rag-intro.md#chunk-1","rag-intro.md#chunk-2"]}
+{"question":"两阶段检索的典型流程是什么？","expected_answer":"粗召回 top-20，rerank top-5","expected_citations":["rag-intro.md#chunk-2"]}
+{"question":"recall@k 衡量什么？","expected_answer":"正确 chunk 有没有被前 k 个结果找回来","expected_citations":["rag-intro.md#chunk-2"]}
+{"question":"precision@k 衡量什么？","expected_answer":"前 k 个结果里有多少是真的相关","expected_citations":["rag-intro.md#chunk-2"]}
+{"question":"MRR 关注什么？","expected_answer":"第一个正确结果排第几","expected_citations":["rag-intro.md#chunk-2"]}
+{"question":"RAG 比微调更适合哪些场景？","expected_answer":"知识经常变化、需要引用来源、需要接入私有文档","expected_citations":["rag-intro.md#chunk-2","rag-intro.md#chunk-3"]}
+{"question":"微调更适合解决什么问题？","expected_answer":"改变模型行为、输出风格、领域表达习惯或固定任务格式","expected_citations":["rag-intro.md#chunk-3"]}
+{"question":"RAG 常用于哪些应用？","expected_answer":"企业知识库问答、文档助手、客服助手","expected_citations":["rag-intro.md#chunk-3"]}
+{"question":"代码知识库里 BM25 和向量检索各自有什么用？","expected_answer":"BM25 对函数名、类名、错误码和配置项很有用","expected_citations":["rag-intro.md#chunk-3"]}
+{"question":"常见检索失败模式有哪些？","expected_answer":"切分问题","expected_citations":["rag-intro.md#chunk-3"]}
+{"question":"查询表达问题可以用什么缓解？","expected_answer":"query rewrite、metadata filter、Hybrid Search 或 reranker","expected_citations":["rag-intro.md#chunk-3"]}

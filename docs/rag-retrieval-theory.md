@@ -227,17 +227,16 @@ nDCG 是 Normalized Discounted Cumulative Gain。它适合一个问题有多个�
 
 ## 8. 下一步项目改造建议
 
-下一版可以把当前项目升级成更完整的检索实验台：
+当前项目已经可以升级成更完整的检索实验台：
 
 ```text
 BM25 retriever
 vector retriever
 hybrid retriever
 recall@k / precision@k / MRR
-experiment comparison
 ```
 
-建议命令形态：
+命令形态：
 
 ```bash
 uv run rag eval data/eval/questions.jsonl --retriever vector --top-k 5
