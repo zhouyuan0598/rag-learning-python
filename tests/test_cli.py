@@ -30,6 +30,21 @@ def test_ask_command_preserves_source_citation_markup(tmp_path: Path, monkeypatc
     assert "[rag.md#chunk-0]" in ask_result.output
 
 
+def test_ingest_command_writes_bm25_index(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    knowledge_dir = tmp_path / "data" / "knowledge"
+    knowledge_dir.mkdir(parents=True)
+    (knowledge_dir / "rag.md").write_text(
+        "BM25 should be indexed during ingest.",
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(app, ["ingest", str(knowledge_dir)])
+
+    assert result.exit_code == 0
+    assert (tmp_path / "data" / "storage" / "bm25-index.json").exists()
+
+
 def test_ask_command_can_show_prompt_without_calling_llm(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.chdir(tmp_path)
     knowledge_dir = tmp_path / "data" / "knowledge"

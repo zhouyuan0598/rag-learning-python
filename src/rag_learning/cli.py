@@ -7,6 +7,7 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
+from rag_learning.bm25_store import JsonBM25Store
 from rag_learning.document_loader import load_documents
 from rag_learning.embeddings import EmbeddingModel, HashEmbeddingModel, SentenceTransformerEmbedding
 from rag_learning.evaluation import EvaluationReport, evaluate_cases, load_evaluation_cases
@@ -25,6 +26,7 @@ LLMBackend = Literal["offline", "claude"]
 RetrieverBackend = Literal["vector", "bm25", "hybrid"]
 DEFAULT_JSON_STORAGE_PATH = Path("data/storage/hash-store.json")
 DEFAULT_CHROMA_STORAGE_PATH = Path("data/storage/chroma")
+DEFAULT_BM25_STORAGE_PATH = Path("data/storage/bm25-index.json")
 DEFAULT_COLLECTION_NAME = "rag_learning"
 DEFAULT_KNOWLEDGE_PATH = Path("data/knowledge")
 
@@ -36,20 +38,23 @@ def ingest(
     embedding_backend: Annotated[EmbeddingBackend, typer.Option("--embedding-backend")] = "hash",
     embedding_model: Annotated[str | None, typer.Option("--embedding-model")] = None,
     storage_path: Annotated[Path | None, typer.Option("--storage-path")] = None,
+    bm25_storage_path: Annotated[Path, typer.Option("--bm25-storage-path")] = (
+        DEFAULT_BM25_STORAGE_PATH
+    ),
     collection: Annotated[str | None, typer.Option("--collection")] = None,
     chunk_size: Annotated[int, typer.Option("--chunk-size")] = 800,
     overlap: Annotated[int, typer.Option("--overlap")] = 100,
 ) -> None:
-    pipeline = RagPipeline(
-        store=_create_store(
-            store_backend, storage_path, collection, embedding_backend, embedding_model
-        ),
-        llm=OfflineContextLLM(),
+    chunks = split_documents(
+        load_documents(path),
         chunk_size=chunk_size,
         overlap=overlap,
     )
-    count = pipeline.ingest_path(path)
-    console.print(f"Ingested {count} chunks from {path}")
+    _create_store(
+        store_backend, storage_path, collection, embedding_backend, embedding_model
+    ).add(chunks)
+    JsonBM25Store(bm25_storage_path).add(chunks)
+    console.print(f"Ingested {len(chunks)} chunks from {path}")
 
 
 @app.command()
