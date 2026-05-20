@@ -2,8 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from rag_learning.models import Chunk
-from rag_learning.models import RetrievedChunk
+from rag_learning.models import Chunk, RetrievedChunk
 from rag_learning.retrievers import BM25Retriever, HybridRetriever
 
 

@@ -7,10 +7,13 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
+from rag_learning.document_loader import load_documents
 from rag_learning.embeddings import EmbeddingModel, HashEmbeddingModel, SentenceTransformerEmbedding
 from rag_learning.evaluation import EvaluationReport, evaluate_cases, load_evaluation_cases
 from rag_learning.llm_client import SYSTEM_PROMPT, ClaudeLLM, OfflineContextLLM, build_prompt
 from rag_learning.rag_pipeline import RagPipeline
+from rag_learning.retrievers import BM25Retriever, HybridRetriever, Retriever
+from rag_learning.splitter import split_documents
 from rag_learning.vector_store import ChromaVectorStore, JsonVectorStore
 
 app = typer.Typer(help="RAG learning CLI")
@@ -19,9 +22,11 @@ console = Console()
 EmbeddingBackend = Literal["hash", "sentence-transformer"]
 StoreBackend = Literal["json", "chroma"]
 LLMBackend = Literal["offline", "claude"]
+RetrieverBackend = Literal["vector", "bm25", "hybrid"]
 DEFAULT_JSON_STORAGE_PATH = Path("data/storage/hash-store.json")
 DEFAULT_CHROMA_STORAGE_PATH = Path("data/storage/chroma")
 DEFAULT_COLLECTION_NAME = "rag_learning"
+DEFAULT_KNOWLEDGE_PATH = Path("data/knowledge")
 
 
 @app.command()
@@ -100,26 +105,44 @@ def ask(
 def eval_command(
     path: Annotated[Path, typer.Argument(help="JSONL evaluation file")],
     top_k: Annotated[int, typer.Option("--top-k")] = 5,
+    retriever: Annotated[RetrieverBackend, typer.Option("--retriever")] = "vector",
     llm_backend: Annotated[LLMBackend, typer.Option("--llm-backend")] = "offline",
     store_backend: Annotated[StoreBackend, typer.Option("--store-backend")] = "json",
     embedding_backend: Annotated[EmbeddingBackend, typer.Option("--embedding-backend")] = "hash",
     embedding_model: Annotated[str | None, typer.Option("--embedding-model")] = None,
     storage_path: Annotated[Path | None, typer.Option("--storage-path")] = None,
     collection: Annotated[str | None, typer.Option("--collection")] = None,
+    knowledge_path: Annotated[Path, typer.Option("--knowledge-path")] = DEFAULT_KNOWLEDGE_PATH,
+    chunk_size: Annotated[int, typer.Option("--chunk-size")] = 800,
+    overlap: Annotated[int, typer.Option("--overlap")] = 100,
 ) -> None:
     try:
         cases = load_evaluation_cases(path)
     except ValueError as exc:
         raise typer.BadParameter(str(exc), param_hint="path") from exc
 
-    pipeline = RagPipeline(
-        store=_create_store(
-            store_backend, storage_path, collection, embedding_backend, embedding_model
-        ),
+    try:
+        selected_retriever = _create_eval_retriever(
+            retriever,
+            store_backend,
+            storage_path,
+            collection,
+            embedding_backend,
+            embedding_model,
+            knowledge_path,
+            chunk_size,
+            overlap,
+        )
+    except FileNotFoundError as exc:
+        raise typer.BadParameter(str(exc), param_hint="knowledge_path") from exc
+
+    report = evaluate_cases(
+        selected_retriever,
+        cases,
+        top_k=top_k,
         llm=_create_llm(llm_backend),
     )
-    report = evaluate_cases(pipeline, cases, top_k=top_k)
-    _print_evaluation_report(report)
+    _print_evaluation_report(report, retriever)
 
 
 def _create_store(
@@ -184,6 +207,43 @@ def _create_llm(llm_backend: LLMBackend) -> OfflineContextLLM | ClaudeLLM:
     return ClaudeLLM()
 
 
+def _create_eval_retriever(
+    retriever: RetrieverBackend,
+    store_backend: StoreBackend,
+    storage_path: Path | None,
+    collection: str | None,
+    embedding_backend: EmbeddingBackend,
+    embedding_model_name: str | None,
+    knowledge_path: Path,
+    chunk_size: int,
+    overlap: int,
+) -> Retriever:
+    if retriever == "bm25":
+        return _create_bm25_retriever(knowledge_path, chunk_size, overlap)
+
+    vector_retriever = _create_store(
+        store_backend, storage_path, collection, embedding_backend, embedding_model_name
+    )
+    if retriever == "vector":
+        return vector_retriever
+    return HybridRetriever(
+        [
+            vector_retriever,
+            _create_bm25_retriever(knowledge_path, chunk_size, overlap),
+        ]
+    )
+
+
+def _create_bm25_retriever(
+    knowledge_path: Path,
+    chunk_size: int,
+    overlap: int,
+) -> BM25Retriever:
+    documents = load_documents(knowledge_path)
+    chunks = split_documents(documents, chunk_size=chunk_size, overlap=overlap)
+    return BM25Retriever(chunks)
+
+
 def _print_results(results: list) -> None:
     table = Table(title="Search Results")
     table.add_column("Score", justify="right")
@@ -196,13 +256,17 @@ def _print_results(results: list) -> None:
     console.print(table)
 
 
-def _print_evaluation_report(report: EvaluationReport) -> None:
+def _print_evaluation_report(report: EvaluationReport, retriever: str) -> None:
     summary_table = Table(title="Evaluation Summary")
     summary_table.add_column("Metric")
     summary_table.add_column("Value", justify="right")
     summary = report.summary
+    summary_table.add_row("retriever", retriever)
     summary_table.add_row("case_count", str(summary.case_count))
     summary_table.add_row("retrieval_hit_rate", f"{summary.retrieval_hit_rate:.2%}")
+    summary_table.add_row("recall_at_k", f"{summary.recall_at_k:.2%}")
+    summary_table.add_row("precision_at_k", f"{summary.precision_at_k:.2%}")
+    summary_table.add_row("mrr", f"{summary.mrr:.4f}")
     summary_table.add_row(
         "answer_contains_expected_rate", f"{summary.answer_contains_expected_rate:.2%}"
     )

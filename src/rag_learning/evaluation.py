@@ -5,7 +5,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from time import perf_counter
 
-from rag_learning.rag_pipeline import RagPipeline
+from rag_learning.llm_client import LLMClient
+from rag_learning.retrievers import Retriever
 
 
 @dataclass(frozen=True)
@@ -91,18 +92,23 @@ def _case_from_data(data: object, line_number: int) -> EvaluationCase:
 
 
 def evaluate_cases(
-    pipeline: RagPipeline,
+    retriever: Retriever,
     cases: list[EvaluationCase],
     top_k: int = 5,
+    llm: LLMClient | None = None,
 ) -> EvaluationReport:
+    resolved_llm = llm or getattr(retriever, "llm", None)
+    if resolved_llm is None:
+        raise ValueError("llm is required when the retriever does not provide one")
+
     results: list[EvaluationResult] = []
     for case in cases:
         retrieval_started = perf_counter()
-        retrieved = pipeline.search(case.question, top_k=top_k)
+        retrieved = retriever.search(case.question, top_k=top_k)
         retrieval_ms = (perf_counter() - retrieval_started) * 1000
 
         answer_started = perf_counter()
-        answer = pipeline.llm.generate(case.question, retrieved)
+        answer = resolved_llm.generate(case.question, retrieved)
         answer_ms = (perf_counter() - answer_started) * 1000
 
         retrieved_citations = [result.chunk.citation for result in retrieved]

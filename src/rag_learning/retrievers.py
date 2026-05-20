@@ -70,7 +70,9 @@ class BM25Retriever:
     def _idf(self, term: str) -> float:
         document_count = len(self.chunks)
         document_frequency = self._document_frequencies[term]
-        return math.log(1 + (document_count - document_frequency + 0.5) / (document_frequency + 0.5))
+        return math.log(
+            1 + (document_count - document_frequency + 0.5) / (document_frequency + 0.5)
+        )
 
 
 class HybridRetriever:

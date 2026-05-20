@@ -110,6 +110,113 @@ def test_eval_command_prints_summary_and_details(tmp_path: Path, monkeypatch) ->
     assert "rag-intro.md#chunk-0" in eval_result.output
 
 
+def test_eval_command_can_use_bm25_retriever_without_ingest(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    knowledge_dir = tmp_path / "data" / "knowledge"
+    knowledge_dir.mkdir(parents=True)
+    (knowledge_dir / "rag-intro.md").write_text(
+        "BM25 适合精确术语、编号和关键词检索。",
+        encoding="utf-8",
+    )
+    eval_file = tmp_path / "questions.jsonl"
+    eval_file.write_text(
+        '{"question":"BM25 适合什么？","expected_answer":"精确术语",'
+        '"expected_citations":["rag-intro.md#chunk-0"]}\n',
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "eval",
+            str(eval_file),
+            "--retriever",
+            "bm25",
+            "--knowledge-path",
+            str(knowledge_dir),
+            "--top-k",
+            "1",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert "retriever" in result.output
+    assert "bm25" in result.output
+    assert "recall_at_k" in result.output
+    assert "precision_at_k" in result.output
+    assert "mrr" in result.output
+    assert "rag-intro.md#chunk-0" in result.output
+
+
+def test_eval_command_can_use_vector_retriever_explicitly(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    knowledge_dir = tmp_path / "data" / "knowledge"
+    knowledge_dir.mkdir(parents=True)
+    (knowledge_dir / "rag-intro.md").write_text(
+        "向量检索适合语义相似和自然语言改写。",
+        encoding="utf-8",
+    )
+    eval_file = tmp_path / "questions.jsonl"
+    eval_file.write_text(
+        '{"question":"向量检索适合什么？","expected_answer":"语义相似",'
+        '"expected_citations":["rag-intro.md#chunk-0"]}\n',
+        encoding="utf-8",
+    )
+
+    ingest_result = runner.invoke(app, ["ingest", str(knowledge_dir)])
+    assert ingest_result.exit_code == 0
+
+    result = runner.invoke(
+        app,
+        ["eval", str(eval_file), "--retriever", "vector", "--top-k", "1"],
+    )
+
+    assert result.exit_code == 0
+    assert "vector" in result.output
+    assert "recall_at_k" in result.output
+
+
+def test_eval_command_can_use_hybrid_retriever(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    knowledge_dir = tmp_path / "data" / "knowledge"
+    knowledge_dir.mkdir(parents=True)
+    (knowledge_dir / "rag-intro.md").write_text(
+        "Hybrid Search 使用 RRF 融合 BM25 关键词检索和向量检索。",
+        encoding="utf-8",
+    )
+    eval_file = tmp_path / "questions.jsonl"
+    eval_file.write_text(
+        '{"question":"Hybrid Search 使用什么融合？","expected_answer":"RRF",'
+        '"expected_citations":["rag-intro.md#chunk-0"]}\n',
+        encoding="utf-8",
+    )
+
+    ingest_result = runner.invoke(app, ["ingest", str(knowledge_dir)])
+    assert ingest_result.exit_code == 0
+
+    result = runner.invoke(
+        app,
+        [
+            "eval",
+            str(eval_file),
+            "--retriever",
+            "hybrid",
+            "--knowledge-path",
+            str(knowledge_dir),
+            "--top-k",
+            "1",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert "hybrid" in result.output
+    assert "mrr" in result.output
+
+
 def test_eval_command_reports_invalid_jsonl(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.chdir(tmp_path)
     eval_file = tmp_path / "questions.jsonl"
