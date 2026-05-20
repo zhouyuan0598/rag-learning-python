@@ -151,6 +151,7 @@ def test_eval_command_can_use_bm25_retriever_without_ingest(
             "bm25",
             "--knowledge-path",
             str(knowledge_dir),
+            "--build-bm25-from-knowledge",
             "--top-k",
             "1",
         ],
@@ -163,6 +164,63 @@ def test_eval_command_can_use_bm25_retriever_without_ingest(
     assert "precision_at_k" in result.output
     assert "mrr" in result.output
     assert "rag-intro.md#chunk-0" in result.output
+
+
+def test_eval_command_uses_persisted_bm25_index_after_ingest(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    knowledge_dir = tmp_path / "data" / "knowledge"
+    knowledge_dir.mkdir(parents=True)
+    (knowledge_dir / "rag-intro.md").write_text(
+        "BM25 持久化索引用于查询阶段。",
+        encoding="utf-8",
+    )
+    eval_file = tmp_path / "questions.jsonl"
+    eval_file.write_text(
+        '{"question":"BM25 持久化索引用于什么？","expected_answer":"查询阶段",'
+        '"expected_citations":["rag-intro.md#chunk-0"]}\n',
+        encoding="utf-8",
+    )
+
+    ingest_result = runner.invoke(app, ["ingest", str(knowledge_dir)])
+    assert ingest_result.exit_code == 0
+
+    result = runner.invoke(
+        app,
+        [
+            "eval",
+            str(eval_file),
+            "--retriever",
+            "bm25",
+            "--knowledge-path",
+            str(tmp_path / "missing-knowledge"),
+            "--top-k",
+            "1",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert "bm25" in result.output
+    assert "rag-intro.md#chunk-0" in result.output
+
+
+def test_eval_command_reports_missing_persisted_bm25_index(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    eval_file = tmp_path / "questions.jsonl"
+    eval_file.write_text(
+        '{"question":"BM25","expected_answer":"BM25",'
+        '"expected_citations":["rag-intro.md#chunk-0"]}\n',
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(app, ["eval", str(eval_file), "--retriever", "bm25"])
+
+    assert result.exit_code != 0
+    assert "BM25 index does not exist" in result.output
+    assert "uv run rag ingest data/knowledge" in result.output
 
 
 def test_eval_command_can_use_vector_retriever_explicitly(

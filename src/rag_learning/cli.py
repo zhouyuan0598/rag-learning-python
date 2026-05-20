@@ -116,8 +116,14 @@ def eval_command(
     embedding_backend: Annotated[EmbeddingBackend, typer.Option("--embedding-backend")] = "hash",
     embedding_model: Annotated[str | None, typer.Option("--embedding-model")] = None,
     storage_path: Annotated[Path | None, typer.Option("--storage-path")] = None,
+    bm25_storage_path: Annotated[Path, typer.Option("--bm25-storage-path")] = (
+        DEFAULT_BM25_STORAGE_PATH
+    ),
     collection: Annotated[str | None, typer.Option("--collection")] = None,
     knowledge_path: Annotated[Path, typer.Option("--knowledge-path")] = DEFAULT_KNOWLEDGE_PATH,
+    build_bm25_from_knowledge: Annotated[
+        bool, typer.Option("--build-bm25-from-knowledge")
+    ] = False,
     chunk_size: Annotated[int, typer.Option("--chunk-size")] = 800,
     overlap: Annotated[int, typer.Option("--overlap")] = 100,
 ) -> None:
@@ -134,12 +140,15 @@ def eval_command(
             collection,
             embedding_backend,
             embedding_model,
+            bm25_storage_path,
             knowledge_path,
+            build_bm25_from_knowledge,
             chunk_size,
             overlap,
         )
     except FileNotFoundError as exc:
-        raise typer.BadParameter(str(exc), param_hint="knowledge_path") from exc
+        param_hint = "bm25_storage_path" if "BM25 index" in str(exc) else "knowledge_path"
+        raise typer.BadParameter(str(exc), param_hint=param_hint) from exc
 
     report = evaluate_cases(
         selected_retriever,
@@ -219,12 +228,20 @@ def _create_eval_retriever(
     collection: str | None,
     embedding_backend: EmbeddingBackend,
     embedding_model_name: str | None,
+    bm25_storage_path: Path,
     knowledge_path: Path,
+    build_bm25_from_knowledge: bool,
     chunk_size: int,
     overlap: int,
 ) -> Retriever:
     if retriever == "bm25":
-        return _create_bm25_retriever(knowledge_path, chunk_size, overlap)
+        return _create_bm25_retriever(
+            bm25_storage_path,
+            knowledge_path,
+            build_bm25_from_knowledge,
+            chunk_size,
+            overlap,
+        )
 
     vector_retriever = _create_store(
         store_backend, storage_path, collection, embedding_backend, embedding_model_name
@@ -234,16 +251,27 @@ def _create_eval_retriever(
     return HybridRetriever(
         [
             vector_retriever,
-            _create_bm25_retriever(knowledge_path, chunk_size, overlap),
+            _create_bm25_retriever(
+                bm25_storage_path,
+                knowledge_path,
+                build_bm25_from_knowledge,
+                chunk_size,
+                overlap,
+            ),
         ]
     )
 
 
 def _create_bm25_retriever(
+    bm25_storage_path: Path,
     knowledge_path: Path,
+    build_bm25_from_knowledge: bool,
     chunk_size: int,
     overlap: int,
-) -> BM25Retriever:
+) -> BM25Retriever | JsonBM25Store:
+    if not build_bm25_from_knowledge:
+        return JsonBM25Store(bm25_storage_path, require_existing=True)
+
     documents = load_documents(knowledge_path)
     chunks = split_documents(documents, chunk_size=chunk_size, overlap=overlap)
     return BM25Retriever(chunks)
